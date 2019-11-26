@@ -37,7 +37,7 @@
     file: 'sampledata/Barn Open.obj',
     name: 'Barn Open',
     recenter: 'root',
-    scale: 0.000023,
+    scale: 0.000026,
   },
   samplers: [
     {
