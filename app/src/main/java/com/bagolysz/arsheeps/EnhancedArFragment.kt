@@ -4,15 +4,12 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.google.ar.core.*
 import com.google.ar.sceneform.AnchorNode
-import com.google.ar.sceneform.FrameTime
-import com.google.ar.sceneform.HitTestResult
 import com.google.ar.sceneform.Node
 import com.google.ar.sceneform.math.Vector3
 import com.google.ar.sceneform.rendering.ModelRenderable
@@ -29,13 +26,19 @@ class EnhancedArFragment : ArFragment() {
     // to keep tracking which trackable that we have created AnchorNode with it or not.
     private val trackableSet = mutableSetOf<String>()
     private var nodesPlaced = 0
-    private var canPlaceSheeps = false
+
+    private var numberOfSheeps = 2
+    private var sheepSpeed = 0.0004f
+
+    private var markersFound = false
 
     private var dog: Node? = null
     private var farm: Node? = null
 
     // sheep object
     private var sheeps: MutableList<Sheep> = mutableListOf()
+
+    private var sceneReady = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,18 +48,19 @@ class EnhancedArFragment : ArFragment() {
         val view = super.onCreateView(inflater, container, savedInstanceState)
         modelLoader = ModelLoader(WeakReference(this))
 
-        // set touch event listener
-        arSceneView.scene.setOnTouchListener(::onTouchEvent)
-
         // add frame update listener
-        arSceneView.scene.addOnUpdateListener(::onUpdateFrame)
+        arSceneView.scene.addOnUpdateListener { onUpdateFrame() }
 
         // add plane tap listener
-        setOnTapArPlaneListener { hitResult, plane, motionEvent ->
-            if (canPlaceSheeps && nodesPlaced < 2) {
-                val anchor = plane.createAnchor(plane.centerPose)
-                modelLoader.loadModel(anchor, Uri.parse(Utils.OBJ_SHEEP), Utils.OBJ_SHEEP, true)
-                nodesPlaced++
+        setOnTapArPlaneListener { _, plane, _ ->
+            if (markersFound) {
+                while (nodesPlaced < numberOfSheeps) {
+                    val anchor = plane.createAnchor(plane.centerPose)
+                    modelLoader.loadModel(anchor, Uri.parse(Utils.OBJ_SHEEP), Utils.OBJ_SHEEP, true)
+                    nodesPlaced++
+                }
+                sceneReady = true
+                (activity as? MainActivity)?.setStartVisibility(false)
             }
         }
 
@@ -77,17 +81,18 @@ class EnhancedArFragment : ArFragment() {
     }
 
     fun onFabClick() {
-        canPlaceSheeps = true
+        destroyScene()
     }
 
-    fun onFab2Click() {
-        sheeps.forEach {
-            it.mayMove = !it.mayMove
-            it.finished = false
+    private fun onUpdateFrame() {
+        if (sceneReady) {
+            performUpdates()
+        } else {
+            setupScene()
         }
     }
 
-    private fun onUpdateFrame(frameTime: FrameTime?) {
+    private fun performUpdates() {
         if (dog != null && farm != null && sheeps.isNotEmpty()) {
             val dogPos = dog!!.worldPosition
             val dogRotation = dog!!.worldRotation
@@ -111,6 +116,11 @@ class EnhancedArFragment : ArFragment() {
                     showMessage("A sheep has arrived")
                 }
             }
+
+            if (sheeps.none { !it.finished }) {
+                (activity as? MainActivity)?.setFinishedVisibility(true)
+                sceneReady = false
+            }
         }
     }
 
@@ -120,7 +130,7 @@ class EnhancedArFragment : ArFragment() {
                 screenPoint.y > 0 && screenPoint.y <= arSceneView.height)
     }
 
-    private fun onTouchEvent(hitTestResult: HitTestResult, motionEvent: MotionEvent): Boolean {
+    private fun setupScene(): Boolean {
         val frame = arSceneView.arFrame
         // If there is no frame or ARCore is not tracking yet, just return.
         if (frame == null || frame.camera.trackingState != TrackingState.TRACKING) {
@@ -134,7 +144,7 @@ class EnhancedArFragment : ArFragment() {
                 TrackingState.TRACKING -> {
                     // if it is in tracking state and we didn't add AnchorNode, then add one
                     if (trackableSet.size < 2 && !trackableSet.contains(image.name)) {
-                        showMessage("Adding object ${image.name}")
+                        showMessage("Adding ${image.name}")
 
                         trackableSet.add(image.name)
                         val anchor = image.createAnchor(image.centerPose)
@@ -144,6 +154,11 @@ class EnhancedArFragment : ArFragment() {
                             getImageModelName(image.name),
                             false
                         )
+
+                        if (trackableSet.size == 2) {
+                            markersFound = true
+                            (activity as? MainActivity)?.setStartVisibility(true)
+                        }
                     }
                 }
                 TrackingState.STOPPED -> {
@@ -156,6 +171,15 @@ class EnhancedArFragment : ArFragment() {
         }
 
         return true
+    }
+
+    private fun destroyScene() {
+        sheeps.forEach {
+            it.node.removeChild(it.node.parent)
+            it.node.renderable = null
+        }
+
+        sheeps.clear()
     }
 
     private fun getImageModelName(name: String): String {
@@ -188,7 +212,7 @@ class EnhancedArFragment : ArFragment() {
             node.translationController.isEnabled = true
             node.setParent(anchorNode)
 
-            sheeps.add(Sheep(node).apply { init() })
+            sheeps.add(Sheep(node, sheepSpeed).apply { init() })
             arSceneView.scene.addChild(anchorNode)
         } else {
             //we may not use TransformableNode to improve the stability of the marker model
@@ -222,9 +246,11 @@ class EnhancedArFragment : ArFragment() {
 
     companion object {
 
-        const val FARM_DIST_TH = 0.12f
+        const val FARM_DIST_TH = 0.15f
         const val DOG_DIST_TH = 0.08f
-        const val CHANGE_DELAY_MS = 2000L
+        const val CHANGE_DELAY_MS = 1300L
+
+        private const val SPEED = 0.0004f
 
     }
 }

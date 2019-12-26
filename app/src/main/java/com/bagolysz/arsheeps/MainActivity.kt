@@ -1,8 +1,7 @@
 package com.bagolysz.arsheeps
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
@@ -17,21 +16,13 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener {
             (ar_fragment as? EnhancedArFragment)?.onFabClick()
         }
-
-        fab2.setOnClickListener {
-            (ar_fragment as? EnhancedArFragment)?.onFab2Click()
-        }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
+    fun setStartVisibility(visible: Boolean) {
+        ready_text.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
-        }
+    fun setFinishedVisibility(visible: Boolean) {
+        finished_text.visibility = if (visible) View.VISIBLE else View.GONE
     }
 }

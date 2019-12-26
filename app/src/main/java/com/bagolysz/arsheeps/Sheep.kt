@@ -5,7 +5,7 @@ import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
 import kotlin.random.Random
 
-class Sheep(val node: Node) {
+class Sheep(val node: Node, val speed: Float) {
 
     var degrees: Double = 0.0
     var mayMove = false
@@ -14,6 +14,7 @@ class Sheep(val node: Node) {
 
     fun init() {
         changeDirection()
+        mayMove = true
     }
 
     fun update() {
@@ -27,7 +28,7 @@ class Sheep(val node: Node) {
             node.worldRotation = rotation
             degrees = toDegrees(rotation)
         } else {
-            val rand = Random.nextInt(0, 4)
+            val rand = Random.nextInt(0, Direction.values().size)
             val generatedDir = Direction.values()[rand]
             val generatedRot = getRotationMatrix(generatedDir)
             node.worldRotation = generatedRot
@@ -41,23 +42,23 @@ class Sheep(val node: Node) {
         when (degrees) {
             in 0.0..90.0 -> {
                 val m = map(degrees, 0.0, 90.0).toFloat()
-                newPosition.z += (1 - m) * SPEED
-                newPosition.x += m * SPEED
+                newPosition.z += (1 - m) * speed
+                newPosition.x += m * speed
             }
             in 90.0..180.0 -> {
                 val m = map(degrees, 90.0, 180.0).toFloat()
-                newPosition.x += (1 - m) * SPEED
-                newPosition.z -= m * SPEED
+                newPosition.x += (1 - m) * speed
+                newPosition.z -= m * speed
             }
             in 180.0..270.0 -> {
                 val m = map(degrees, 180.0, 270.0).toFloat()
-                newPosition.z -= (1 - m) * SPEED
-                newPosition.x -= m * SPEED
+                newPosition.z -= (1 - m) * speed
+                newPosition.x -= m * speed
             }
             in 270.0..360.0 -> {
                 val m = map(degrees, 270.0, 360.0).toFloat()
-                newPosition.x -= (1 - m) * SPEED
-                newPosition.z += m * SPEED
+                newPosition.x -= (1 - m) * speed
+                newPosition.z += m * speed
             }
         }
 
@@ -91,6 +92,10 @@ class Sheep(val node: Node) {
             Direction.BACK -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 180f)
             Direction.RIGHT -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 90f)
             Direction.LEFT -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 270f)
+            Direction.RAND1 -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 30f)
+            Direction.RAND2 -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 145f)
+            Direction.RAND3 -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 300f)
+            Direction.RAND4 -> Quaternion.axisAngle(Vector3(0f, 1f, 0f), 330f)
         }
     }
 
@@ -98,10 +103,11 @@ class Sheep(val node: Node) {
         FORWARD,
         BACK,
         RIGHT,
-        LEFT
+        LEFT,
+        RAND1,
+        RAND2,
+        RAND3,
+        RAND4
     }
 
-    companion object {
-        private const val SPEED = 0.0004f
-    }
 }

@@ -22,26 +22,16 @@
 
     <include layout="@layout/content_main" />
 
-    <LinearLayout
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fab"
+        style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:orientation="vertical">
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:backgroundTint="@color/colorPrimary" />
-
-    </LinearLayout>
-
+        android:layout_margin="16dp"
+        android:backgroundTint="@color/colorAccent"
+        android:text="Next Level"
+        android:textAllCaps="false"
+        android:textSize="14sp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
