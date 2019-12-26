@@ -27,13 +27,13 @@ class EnhancedArFragment : ArFragment() {
     private val trackableSet = mutableSetOf<String>()
     private var nodesPlaced = 0
 
-    private var numberOfSheeps = 2
-    private var sheepSpeed = 0.0004f
+    private var currentLevel = 0
 
     private var markersFound = false
 
     private var dog: Node? = null
     private var farm: Node? = null
+    private var plane: Plane? = null
 
     // sheep object
     private var sheeps: MutableList<Sheep> = mutableListOf()
@@ -54,13 +54,8 @@ class EnhancedArFragment : ArFragment() {
         // add plane tap listener
         setOnTapArPlaneListener { _, plane, _ ->
             if (markersFound) {
-                while (nodesPlaced < numberOfSheeps) {
-                    val anchor = plane.createAnchor(plane.centerPose)
-                    modelLoader.loadModel(anchor, Uri.parse(Utils.OBJ_SHEEP), Utils.OBJ_SHEEP, true)
-                    nodesPlaced++
-                }
-                sceneReady = true
-                (activity as? MainActivity)?.setStartVisibility(false)
+                this.plane = plane
+                loadLevel()
             }
         }
 
@@ -81,7 +76,28 @@ class EnhancedArFragment : ArFragment() {
     }
 
     fun onFabClick() {
-        destroyScene()
+        currentLevel++
+        if (currentLevel < MAX_LEVEL) {
+            destroyScene()
+            loadLevel()
+        } else {
+            (activity as? MainActivity)?.setFabText("All levels completed")
+        }
+        (activity as? MainActivity)?.setFinishedVisibility(false)
+    }
+
+    private fun loadLevel() {
+        plane?.let { plane ->
+            while (nodesPlaced < levels[currentLevel].numberOfSheeps) {
+                val anchor = plane.createAnchor(plane.centerPose)
+                modelLoader.loadModel(anchor, Uri.parse(Utils.OBJ_SHEEP), Utils.OBJ_SHEEP, true)
+                nodesPlaced++
+            }
+            sceneReady = true
+            (activity as? MainActivity)?.setFabText(levels[currentLevel].name)
+            (activity as? MainActivity)?.setFabEnabled(false)
+            (activity as? MainActivity)?.setStartVisibility(false)
+        }
     }
 
     private fun onUpdateFrame() {
@@ -119,6 +135,8 @@ class EnhancedArFragment : ArFragment() {
 
             if (sheeps.none { !it.finished }) {
                 (activity as? MainActivity)?.setFinishedVisibility(true)
+                (activity as? MainActivity)?.setFabText("Next Level")
+                (activity as? MainActivity)?.setFabEnabled(true)
                 sceneReady = false
             }
         }
@@ -178,7 +196,7 @@ class EnhancedArFragment : ArFragment() {
             it.node.removeChild(it.node.parent)
             it.node.renderable = null
         }
-
+        nodesPlaced = 0
         sheeps.clear()
     }
 
@@ -212,7 +230,7 @@ class EnhancedArFragment : ArFragment() {
             node.translationController.isEnabled = true
             node.setParent(anchorNode)
 
-            sheeps.add(Sheep(node, sheepSpeed).apply { init() })
+            sheeps.add(Sheep(node, levels[currentLevel].speed).apply { init() })
             arSceneView.scene.addChild(anchorNode)
         } else {
             //we may not use TransformableNode to improve the stability of the marker model
@@ -249,8 +267,14 @@ class EnhancedArFragment : ArFragment() {
         const val FARM_DIST_TH = 0.15f
         const val DOG_DIST_TH = 0.08f
         const val CHANGE_DELAY_MS = 1300L
-
-        private const val SPEED = 0.0004f
+        const val MAX_LEVEL = 5
+        val levels = listOf(
+            Level("Level 1", 2, 0.0004f),
+            Level("Level 2", 5, 0.0005f),
+            Level("Level 3", 8, 0.0005f),
+            Level("Level 4", 8, 0.0007f),
+            Level("Level 5", 13, 0.0007f)
+        )
 
     }
 }

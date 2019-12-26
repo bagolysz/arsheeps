@@ -18,6 +18,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun setFabText(text: String) {
+        fab.text = text
+    }
+
+    fun setFabEnabled(enabled: Boolean) {
+        fab.isEnabled = enabled
+    }
+
     fun setStartVisibility(visible: Boolean) {
         ready_text.visibility = if (visible) View.VISIBLE else View.GONE
     }
