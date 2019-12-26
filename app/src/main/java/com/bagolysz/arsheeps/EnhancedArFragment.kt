@@ -3,6 +3,7 @@ package com.bagolysz.arsheeps
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import com.google.ar.sceneform.ux.TransformableNode
 import java.lang.ref.WeakReference
 import kotlin.math.pow
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 
 class EnhancedArFragment : ArFragment() {
@@ -40,6 +42,8 @@ class EnhancedArFragment : ArFragment() {
 
     private var sceneReady = false
 
+    private lateinit var handlerThread: HandlerThread
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -60,6 +64,12 @@ class EnhancedArFragment : ArFragment() {
         }
 
         return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        handlerThread = HandlerThread("RandomChangeThread")
+        handlerThread.start()
     }
 
     override fun getSessionConfiguration(session: Session): Config {
@@ -94,6 +104,10 @@ class EnhancedArFragment : ArFragment() {
                 nodesPlaced++
             }
             sceneReady = true
+
+            Handler(handlerThread.looper).postDelayed({
+                changeRandomDirection()
+            }, 2000L)
             (activity as? MainActivity)?.setFabText(levels[currentLevel].name)
             (activity as? MainActivity)?.setFabEnabled(false)
             (activity as? MainActivity)?.setStartVisibility(false)
@@ -129,7 +143,7 @@ class EnhancedArFragment : ArFragment() {
                 if (!it.finished && distance(farmPos, sheepPos) < FARM_DIST_TH) {
                     it.mayMove = false
                     it.finished = true
-                    showMessage("A sheep has arrived")
+//                    showMessage("A sheep has arrived")
                 }
             }
 
@@ -146,6 +160,20 @@ class EnhancedArFragment : ArFragment() {
         val screenPoint = arSceneView.scene.camera.worldToScreenPoint(worldPos)
         return (screenPoint.x > 0 && screenPoint.x <= arSceneView.width) && (
                 screenPoint.y > 0 && screenPoint.y <= arSceneView.height)
+    }
+
+    private fun changeRandomDirection() {
+        if (sceneReady) {
+            if (sheeps.isNotEmpty()) {
+                val rand = Random.nextInt(0, sheeps.size)
+                sheeps[rand].changeDirection()
+            }
+
+            Handler(handlerThread.looper).postDelayed(
+                { changeRandomDirection() },
+                levels[currentLevel].randomChangePeriod
+            )
+        }
     }
 
     private fun setupScene(): Boolean {
@@ -269,8 +297,8 @@ class EnhancedArFragment : ArFragment() {
         const val CHANGE_DELAY_MS = 1300L
         const val MAX_LEVEL = 5
         val levels = listOf(
-            Level("Level 1", 2, 0.0004f),
-            Level("Level 2", 5, 0.0005f),
+            Level("Level 1", 2, 0.0004f, 3000L),
+            Level("Level 2", 5, 0.0005f, 3000L),
             Level("Level 3", 8, 0.0005f),
             Level("Level 4", 8, 0.0007f),
             Level("Level 5", 13, 0.0007f)
