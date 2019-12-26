@@ -3,7 +3,6 @@ package com.bagolysz.arsheeps
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -54,8 +53,8 @@ class EnhancedArFragment : ArFragment() {
 
         // add plane tap listener
         setOnTapArPlaneListener { hitResult, plane, motionEvent ->
-            if (canPlaceSheeps && nodesPlaced < 3) {
-                val anchor = hitResult.createAnchor()
+            if (canPlaceSheeps && nodesPlaced < 2) {
+                val anchor = plane.createAnchor(plane.centerPose)
                 modelLoader.loadModel(anchor, Uri.parse(Utils.OBJ_SHEEP), Utils.OBJ_SHEEP, true)
                 nodesPlaced++
             }
@@ -83,7 +82,6 @@ class EnhancedArFragment : ArFragment() {
 
     fun onFab2Click() {
         sheeps.forEach {
-            it.changeDirection()
             it.mayMove = !it.mayMove
             it.finished = false
         }
@@ -92,15 +90,16 @@ class EnhancedArFragment : ArFragment() {
     private fun onUpdateFrame(frameTime: FrameTime?) {
         if (dog != null && farm != null && sheeps.isNotEmpty()) {
             val dogPos = dog!!.worldPosition
+            val dogRotation = dog!!.worldRotation
             val farmPos = farm!!.worldPosition
 
             sheeps.filter { inScreen(it.node.worldPosition) }.forEach {
                 it.update()
                 val sheepPos = it.node.worldPosition
 
-                if (distance(dogPos, sheepPos) < DOG_DIST_TH) {
-                    it.changeDirection()
+                if (distance(dogPos, sheepPos) < DOG_DIST_TH && it.mayChangeDirection) {
                     it.mayChangeDirection = false
+                    it.changeDirection(dogRotation)
                     Handler().postDelayed(
                         { it.mayChangeDirection = true }, CHANGE_DELAY_MS
                     )
@@ -167,10 +166,6 @@ class EnhancedArFragment : ArFragment() {
         }
     }
 
-    private fun showMessage(message: String?) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
     private fun distance(v1: Vector3, v2: Vector3): Float {
         val diff = Vector3.subtract(v1, v2)
         return sqrt(diff.x.pow(2) + diff.z.pow(2))
@@ -193,7 +188,7 @@ class EnhancedArFragment : ArFragment() {
             node.translationController.isEnabled = true
             node.setParent(anchorNode)
 
-            sheeps.add(Sheep(node))
+            sheeps.add(Sheep(node).apply { init() })
             arSceneView.scene.addChild(anchorNode)
         } else {
             //we may not use TransformableNode to improve the stability of the marker model
@@ -221,15 +216,15 @@ class EnhancedArFragment : ArFragment() {
         return
     }
 
-    private fun logMe(message: String) {
-        Log.d("ARXX", message)
+    private fun showMessage(message: String?) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     companion object {
 
         const val FARM_DIST_TH = 0.12f
         const val DOG_DIST_TH = 0.08f
-        const val CHANGE_DELAY_MS = 1000L
+        const val CHANGE_DELAY_MS = 2000L
 
     }
 }
