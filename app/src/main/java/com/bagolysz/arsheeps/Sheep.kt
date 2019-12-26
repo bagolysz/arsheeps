@@ -79,6 +79,6 @@ class Sheep(val node: Node) {
     }
 
     companion object {
-        private const val SPEED = 0.001f
+        private const val SPEED = 0.0007f
     }
 }

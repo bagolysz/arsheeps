@@ -54,7 +54,7 @@ class EnhancedArFragment : ArFragment() {
 
         // add plane tap listener
         setOnTapArPlaneListener { hitResult, plane, motionEvent ->
-            if (canPlaceSheeps && nodesPlaced < 5) {
+            if (canPlaceSheeps && nodesPlaced < 3) {
                 val anchor = hitResult.createAnchor()
                 modelLoader.loadModel(anchor, Uri.parse(Utils.OBJ_SHEEP), Utils.OBJ_SHEEP, true)
                 nodesPlaced++
@@ -94,7 +94,7 @@ class EnhancedArFragment : ArFragment() {
             val dogPos = dog!!.worldPosition
             val farmPos = farm!!.worldPosition
 
-            sheeps.forEach {
+            sheeps.filter { inScreen(it.node.worldPosition) }.forEach {
                 it.update()
                 val sheepPos = it.node.worldPosition
 
@@ -108,11 +108,17 @@ class EnhancedArFragment : ArFragment() {
 
                 if (!it.finished && distance(farmPos, sheepPos) < FARM_DIST_TH) {
                     it.mayMove = false
-                    it.finished = false
+                    it.finished = true
                     showMessage("A sheep has arrived")
                 }
             }
         }
+    }
+
+    private fun inScreen(worldPos: Vector3): Boolean {
+        val screenPoint = arSceneView.scene.camera.worldToScreenPoint(worldPos)
+        return (screenPoint.x > 0 && screenPoint.x <= arSceneView.width) && (
+                screenPoint.y > 0 && screenPoint.y <= arSceneView.height)
     }
 
     private fun onTouchEvent(hitTestResult: HitTestResult, motionEvent: MotionEvent): Boolean {
